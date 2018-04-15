@@ -1,0 +1,93 @@
+html {
+    width: 100%;
+    height: 100%;
+    margin: 0px;
+}
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0px;
+    /*background-color: #fff;*/
+    background-color: #000;
+    color: black;
+}
+body .container {
+    left: 60px;
+}
+#header {
+    background: linear-gradient(rgba(0,0,0,1), rgba(0,0,0,0));
+    width: 100%;
+    height: 80px;
+    top: 0px;
+    position: absolute;
+}
+#header p {
+    font-weight: 900;
+    margin: 0px;
+    padding: 10px;
+    display: inline-block;
+    color: white;
+    text-shadow: 1px 1px 5px #ffffff;
+}
+#header #welcome {
+    position: absolute;
+    right: 0px;
+}
+#header #counter {
+    padding-top: 0px;
+}
+#grabFrameCanvas {
+    left: 10px;
+    bottom: 10px;
+    position: absolute;
+}
+#openposeCanvas {
+    right: 120px;
+    bottom: 10px;
+    position: absolute;
+}
+#tensorCanvas {
+    right: 10px;
+    bottom: 10px;
+    position: absolute;
+}
+#angles {
+    bottom: 10px;
+    right: 230px;
+    position: absolute;
+    margin: 0px;
+    text-align: center;
+    background-color: white;
+    font-weight: 700;
+    border-radius: 100000px;
+}
+video {
+    width: 100%;
+    height: 100%;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
+    left: 0px;
+    z-index: 5;
+}
+#background {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background-color: white;
+    text-align: center;
+}
+#firebaseui-auth-container {
+    position: absolute;
+    top: 45%;
+    width: 100%;
+    margin: auto;
+}
+#loader {
+    position: absolute;
+    top: 47.5%;
+    width: 100%;
+    margin: auto;
+}

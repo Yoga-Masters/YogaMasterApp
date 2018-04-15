@@ -17,41 +17,38 @@
     <meta name="description" content="Yoga ML App">
     <meta name="keywords" content="Yoga,Ml,Machine Learning,Neural Net,Learn">
     <link rel="shortcut icon" href="favicon.ico" type="image/vnd.microsoft.icon">
+    <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/2.5.1/firebaseui.css" />
     <link type="text/css"rel="stylesheet" href="normalize.css">
     <link type="text/css"rel="stylesheet" href="loading-bar.css">
-    <style type="text/css">
-        html {
-            width: 100%;
-            height: 100%;
-            margin: 0px;
-        }
-        body {
-            width: 100%;
-            height: 100%;
-            margin: 0px;
-            background-color: #888;
-            color: black;
-        }
-    </style>
+    <link type="text/css"rel="stylesheet" href="recordbutton.css">
+    <link type="text/css"rel="stylesheet" href="main.css">
 </head>
 
 <body>
-    <video autoplay></video>
+    <video autoplay id="video"></video>
     <div id="header">
-        <p id="lastUpdated">Last updated: </p>
+        <p id="lastUpdated">YOGA MASTERS | Last updated: ...</p>
+        <p id="welcome">Welcome...</p>
         <!--Add in the confidences as circles with poses in them...-->
-        <p id="welcome">Welcome, </p>
     </div>
-    <p id="angles"></p>
-    <button id="StartStop">Start</button>
     <canvas id="grabFrameCanvas"></canvas>
     <img id="openposeCanvas"></img>
     <img id="tensorCanvas"></img>
+    <p id="angles"></p>
+    <div class="container">
+        <input type="checkbox" id="btn"/>
+        <label for="btn"></label>
+    </div>
+    <div id="background">
+        <div id="loader">Loading...</div>
+    </div>
+    <div id="firebaseui-auth-container"></div>
     <!-- <script src="jquery-3.3.1.min.js" type="text/javascript"></script> -->
     <script src="loading-bar.min.js" type="text/javascript"></script>
     <script src="/__/firebase/4.12.1/firebase-app.js"></script>
     <script src="/__/firebase/4.12.1/firebase-auth.js"></script>
     <script src="/__/firebase/4.12.1/firebase-database.js"></script>
+    <script src="https://cdn.firebase.com/libs/firebaseui/2.5.1/firebaseui.js"></script>
     <script src="main.js"></script>
     <script type="text/javascript">
         function autorun() {
