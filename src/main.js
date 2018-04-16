@@ -19,6 +19,7 @@ var grabLatestFrame = document.getElementById("grabFrameCanvas");
 var angleNames = ["neck", "l_shoulder", "r_shoulder", "l_arm", "r_arm", "l_farm", "r_farm", "l_spine", "r_spine", "l_thigh", "r_thigh", "l_leg", "r_leg"]
 // ============================ FIREBASE SETUP =================================
 function initApp() {
+    trainModel();
     auth = firebase.auth();
     db = firebase.database();
     ui = new firebaseui.auth.AuthUI(auth);
@@ -32,7 +33,7 @@ function initApp() {
                 user = currentUser.uid;
                 console.log("Logging in as "+currentUser.displayName+" with id "+user+"...");
                 ensureUserExists(user, currentUser.displayName, time, () => { setupAppAndListeners(() => {
-                    grabLatestFrame.style.height = "100px";
+                    // grabLatestFrame.style.height = "100px";
                     setInterval(updateStuff, 1000);
                     resize();
                     window.onresize = resize;
@@ -63,7 +64,7 @@ function setupAppAndListeners(cb) {
     db.ref("users/" + user + "/lastUpdated").on("value", (snap) => { lastTime = snap.val(); });
     db.ref("users/" + user + "/updating").on("value", (snap) => { updating = snap.val(); });
     db.ref("users/" + user + "/dimensions").on("value", (snap) => {
-        grabLatestFrame.style.width = (100*(snap.val()[0] / snap.val()[1]))+"px"; 
+        // grabLatestFrame.style.width = (100*(snap.val()[0] / snap.val()[1]))+"px"; 
         angles.style.left = (100*(snap.val()[0] / snap.val()[1])+20)+"px";
     });
     db.ref("users/" + user + "/latestTensorData").on("value", snap => {
@@ -75,7 +76,7 @@ function setupAppAndListeners(cb) {
     });
     db.ref("users/" + user + "/latestConfidences").on("value", snap => {
         var data = snap.val();
-        
+        console.log(data);
     });
 }
 function ensureUserExists(user, name, time, cb) {
@@ -126,7 +127,7 @@ function drawCanvas(canvas, img) {
         canvas.getContext('2d').drawImage(img, 0, 0, img.width, img.height, x, y, img.width * ratio, img.height * ratio);
     }
     updateLatestFrame(canvas.toDataURL(), () => {
-        // onGrabFrameButtonClick();
+        onGrabFrameButtonClick();
     });
 }
 // ============================= FIREBASE FUNCTIONS ============================
@@ -142,7 +143,12 @@ function updateLatestFrame(val, cb) {
     db.ref("users/" + user + "/latestFrame").set(val, () => { if(cb) cb(); });
 }
 // ========================== TENSORFLOW.JS FUNCTIONS ==========================
-function runTensorflow (angles, image) {
+function trainModel() {
+    var time = Date.now();
+    console.log("Training model...");
+    console.log("Finishing training model in "+(Date.now()-time)+"ms!");
+}
+function runTensorflow(angles, image) {
     console.log("Running Tensorflow with:");
     console.log("angles");
     console.log(angles);
@@ -165,7 +171,7 @@ function getReSize() {
 }
 function getAnglesString() {
     var rtrn = "";
-    for(angle in latestAngles) rtrn += "\'"+angleNames[angle]+"\': "+latestAngles[angle]+" | ";
+    for(var angle in latestAngles) rtrn += "\'"+angleNames[angle]+"\': "+latestAngles[angle]+" | ";
     return rtrn.slice(0, -2);
 }
 function convertMS(ms) {
