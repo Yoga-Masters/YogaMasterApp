@@ -6,6 +6,7 @@ var ui;
 var auth;
 var user;
 var types;
+let model;
 var updating;
 var lastTime;
 var canPredict;
@@ -253,11 +254,22 @@ function drawCanvas(canvas, img, upload) {
     });
 }
 // ========================== TENSORFLOW.JS FUNCTIONS ==========================
+async function iris() { // The main function of the Iris demo.
+    const [xTrain, yTrain, xTest, yTest] = getIrisData(0.15);
+    document.getElementById('train-from-scratch').addEventListener('click', async () => {
+        model = await trainModel(xTrain, yTrain, xTest, yTest);
+        evaluateModelOnTestData(model, xTest, yTest);
+    });
+    status('Standing by.');
+    wireUpEvaluateTableCallbacks(() => predictOnManualInput(model));
+}
+
 function trainModel(cb) {
     canPredict = false;
     var time = Date.now();
     console.log("Training model...");
     // TODO: PUT IN CODE FOR TRAINING MODEL
+    // iris();
     console.log("Finishing training model in " + (Date.now() - time) + "ms!");
     canPredict = true;
     if (cb) cb();
