@@ -17,24 +17,33 @@
     <meta name="description" content="Yoga ML App">
     <meta name="keywords" content="Yoga,Ml,Machine Learning,Neural Net,Learn">
     <link rel="shortcut icon" href="favicon.ico" type="image/vnd.microsoft.icon">
+    <link type="text/css" rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700">
     <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/2.5.1/firebaseui.css" />
-    <link type="text/css"rel="stylesheet" href="normalize.css">
-    <link type="text/css"rel="stylesheet" href="loading-bar.css">
-    <link type="text/css"rel="stylesheet" href="recordbutton.css">
-    <link type="text/css"rel="stylesheet" href="main.css">
+    <link type="text/css" rel="stylesheet" href="normalize.css">
+    <link type="text/css" rel="stylesheet" href="loading-bar.css">
+    <link type="text/css" rel="stylesheet" href="recordbutton.css">
+    <link type="text/css" rel="stylesheet" href="main.css">
 </head>
 
 <body>
     <video autoplay id="video"></video>
     <div id="header">
-        <p id="lastUpdated">YOGA MASTERS | Last updated: ...</p>
+        <div style="display: table;">
+            <p id="lastUpdated">Yoga Master | Last updated: ...</p>
+            <select name="dataType" id="selectedData" ></select>
+        </div>
+        <div id="confidences">
+            <div id="warrior" class="ldBar" data-type="fill" data-img="warriorii.png" data-img-size="85,85" data-fill-background="#607D8B"></div>
+            <div id="tree" class="ldBar" data-type="fill" data-img="tree.png" data-img-size="85,85" data-fill-background="#607D8B"></div>
+            <div id="triangle" class="ldBar" data-type="fill" data-img="triangle.png" data-img-size="85,85" data-fill-background="#607D8B"></div>
+        </div>
         <p id="welcome">Welcome...</p>
-        <!--Add in the confidences as circles with poses in them...-->
     </div>
     <canvas id="grabFrameCanvas"></canvas>
+    <canvas id="grabFrameCanvasData"></canvas>
     <img id="openposeCanvas"></img>
     <img id="tensorCanvas"></img>
-    <p id="angles"></p>
+    <p id="data"></p>
     <div class="container">
         <input type="checkbox" id="btn"/>
         <label for="btn"></label>

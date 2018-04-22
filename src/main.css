@@ -2,6 +2,7 @@ html {
     width: 100%;
     height: 100%;
     margin: 0px;
+    font-family: 'Roboto', sans-serif;
 }
 body {
     width: 100%;
@@ -9,17 +10,19 @@ body {
     margin: 0px;
     /*background-color: #fff;*/
     background-color: #000;
+    /*background-color: #64DD17;*/
     color: black;
 }
 body .container {
     left: 60px;
 }
 #header {
-    background: linear-gradient(rgba(0,0,0,1), rgba(0,0,0,0));
+    background: linear-gradient(rgba(0,200,83,.45), rgba(0,0,0,0));
     width: 100%;
-    height: 80px;
+    height: 105px;
     top: 0px;
     position: absolute;
+    text-align: center;
 }
 #header p {
     font-weight: 900;
@@ -27,19 +30,25 @@ body .container {
     padding: 10px;
     display: inline-block;
     color: white;
-    text-shadow: 1px 1px 5px #ffffff;
+    text-shadow: 1px 1px 2px #000;
+    /*text-shadow: 1px 1px 5px #64DD17;*/ /*#ffffff;*/
 }
 #header #welcome {
     position: absolute;
     right: 0px;
+    top: 0px;
 }
 #header #counter {
     padding-top: 0px;
 }
 #grabFrameCanvas {
+    height: 100px;
     left: 10px;
     bottom: 10px;
     position: absolute;
+}
+#grabFrameCanvasData {
+    display: none;
 }
 #openposeCanvas {
     right: 120px;
@@ -51,24 +60,26 @@ body .container {
     bottom: 10px;
     position: absolute;
 }
-#angles {
+#data {
     bottom: 10px;
-    right: 230px;
     position: absolute;
-    margin: 0px;
+    margin: auto 0;
     text-align: center;
     background-color: white;
     font-weight: 700;
     border-radius: 100000px;
+    padding: 5px 10px;
+    background-color: rgb(0,200,83);
+    color: white;
+    text-shadow: 1px 1px 2px black;
 }
 video {
-    width: 100%;
     height: 100%;
     top: 0px;
-    right: 0px;
     bottom: 0px;
-    left: 0px;
     z-index: 5;
+    margin: auto;
+    display: block;
 }
 #background {
     top: 0;
@@ -76,7 +87,7 @@ video {
     width: 100%;
     height: 100%;
     position: absolute;
-    background-color: white;
+    background-color: #00C853;
     text-align: center;
 }
 #firebaseui-auth-container {
@@ -90,4 +101,25 @@ video {
     top: 47.5%;
     width: 100%;
     margin: auto;
+    color: white;
+}
+#confidences {
+    display: inline-flex;
+    margin-top: -35px;
+    background-color: rgba(255, 255, 255, .7);
+    border-radius: 1000000000000px;
+    padding: 0px 35px;
+}
+#selectedData {
+    width: 5px;
+}
+.ldBar-label {
+    /*display: none;*/
+    color: white;
+    background-color: #00C853;
+    padding: 5px 10px;
+    width: fit-content;
+    border-radius: 100000px;
+    margin: auto;
+    text-shadow: 1px 1px 2px black;
 }
