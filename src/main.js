@@ -1,5 +1,6 @@
-// firebase serve -o $IP -p 8080 | browser-sync start --proxy 0.0.0.0:8080 --port 8081 --files "src/**/*"
-// firebase serve -p 81 | browser-sync start --proxy 0.0.0.0:81 --port 8081 --files "src/**/*" | ngrok http --bind-tls "both" 81
+// cls && browser-sync start --proxy 0.0.0.0:5000 --port 5001 --files "src/**/*" | firebase serve
+// clear && browser-sync start --proxy 0.0.0.0:8080 --port 8081 --files "src/**/*" | firebase serve -o $IP -p 8080
+// cls && firebase serve -p 81 | browser-sync start --proxy 0.0.0.0:81 --port 8081 --files "src/**/*" | ngrok http --bind-tls "both" 81
 // ============================= GLOBALS SETUP =================================
 var db;
 var ui;
