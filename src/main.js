@@ -1,6 +1,6 @@
-// ============================= GLOBALS SETUP =================================
 // firebase serve -o $IP -p 8080 | browser-sync start --proxy 0.0.0.0:8080 --port 8081 --files "src/**/*"
 // firebase serve -p 81 | browser-sync start --proxy 0.0.0.0:81 --port 8081 --files "src/**/*" | ngrok http --bind-tls "both" 81
+// ============================= GLOBALS SETUP =================================
 var db;
 var ui;
 var auth;
@@ -38,7 +38,9 @@ function initApp() {
             "uiShown": () => {
                 console.log("Auto logging in...");
                 document.getElementById("loader").style.display = "none";
-                setTimeout(function() { if(document.querySelector("#firebaseui-auth-container button")) document.querySelector("#firebaseui-auth-container button").click(); }, 1000);
+                setTimeout(function () {
+                    if (document.querySelector("#firebaseui-auth-container button")) document.querySelector("#firebaseui-auth-container button").click();
+                }, 1000);
                 return false;
             },
             "signInSuccess": (currentUser, credential, redirectUrl) => {
@@ -50,12 +52,16 @@ function initApp() {
                         setInterval(updateStuff, 1000);
                         resize();
                         window.onresize = resize;
-                        selectedData.onchange = function(e) {
+                        selectedData.onchange = function (e) {
                             selectedType = selectedData.options[selectedData.selectedIndex].value;
                             trainModel();
                         }
-                        btn.addEventListener("click", () => { updateUpdating(!updating); });
-                        mediaDevice = navigator.mediaDevices.getUserMedia({ video: true });
+                        btn.addEventListener("click", () => {
+                            updateUpdating(!updating);
+                        });
+                        mediaDevice = navigator.mediaDevices.getUserMedia({
+                            video: true
+                        });
                         trainModel(() => {
                             onGetUserMediaButtonClick();
                             document.getElementById("background").style.display = "none";
@@ -90,14 +96,22 @@ function setupAppAndListeners(cb) {
         openposeFrame.setAttribute("src", snapshot.latestOpenPoseFrame);
         tensorflowFrame.setAttribute("src", snapshot.latestTensorData.latestProcessedFrame);
         updateUpdating(false, () => {
-           updateConfidences(0, 0, 0, () => { cb(); }); 
+            updateConfidences(0, 0, 0, () => {
+                cb();
+            });
         });
     });
-    db.ref("users/" + user + "/latestOpenPoseFrame").on("value", (snap) => { openposeFrame.setAttribute("src", snap.val()); });
-    db.ref("users/" + user + "/lastUpdated").on("value", (snap) => { lastTime = snap.val(); });
-    db.ref("users/" + user + "/updating").on("value", (snap) => { updating = snap.val(); });
+    db.ref("users/" + user + "/latestOpenPoseFrame").on("value", (snap) => {
+        openposeFrame.setAttribute("src", snap.val());
+    });
+    db.ref("users/" + user + "/lastUpdated").on("value", (snap) => {
+        lastTime = snap.val();
+    });
+    db.ref("users/" + user + "/updating").on("value", (snap) => {
+        updating = snap.val();
+    });
     db.ref("users/" + user + "/dimensions").on("value", (snap) => {
-        grabLatestFrameData.style.width = snap.val()[0]+"px";
+        grabLatestFrameData.style.width = snap.val()[0] + "px";
         grabLatestFrameData.style.height = snap.val()[1] + "px";
         grabLatestFrame.style.width = (100 * (snap.val()[0] / snap.val()[1])) + "px";
         data.style.left = (100 * (snap.val()[0] / snap.val()[1]) + 20) + "px";
@@ -113,9 +127,9 @@ function setupAppAndListeners(cb) {
     });
     db.ref("users/" + user + "/latestConfidences").on("value", snap => {
         var data = snap.val();
-        document.getElementById("warrior").ldBar.set(data.warriorii*100);
-        document.getElementById("tree").ldBar.set(data.tree*100);
-        document.getElementById("triangle").ldBar.set(data.triangle*100);
+        document.getElementById("warrior").ldBar.set(data.warriorii * 100);
+        document.getElementById("tree").ldBar.set(data.tree * 100);
+        document.getElementById("triangle").ldBar.set(data.triangle * 100);
     });
 }
 
@@ -143,38 +157,49 @@ function ensureUserExists(user, name, time, cb) {
                     "warriorii": 0
                 }
             }, cb);
-        }
-        else cb();
+        } else cb();
     });
 }
 // ============================= FIREBASE FUNCTIONS ============================
 function updateUpdating(val, cb) {
     resize();
     console.log("Updating recording to " + (val ? "playing" : "stopped") + " @ " + (new Date()).toLocaleString() + "...");
-    db.ref("users/" + user + "/updating").set(val, () => { if (cb) cb(); });
+    db.ref("users/" + user + "/updating").set(val, () => {
+        if (cb) cb();
+    });
 }
 
 function updateConfidences(warriorii, tree, triangle, cb) {
     console.log("Updating confidences; warriorii to " + warriorii + ", tree to " + tree + ", & triangle to " + triangle + " @ " + (new Date()).toLocaleString() + "...");
-    db.ref("users/" + user + "/latestConfidences").set({ "warriorii": warriorii, "tree": tree, "triangle": triangle }, () => { if (cb) cb(); });
+    db.ref("users/" + user + "/latestConfidences").set({
+        "warriorii": warriorii,
+        "tree": tree,
+        "triangle": triangle
+    }, () => {
+        if (cb) cb();
+    });
 }
 
 function updateDims(val, cb) {
     console.log("Updating window dimensions to " + val[0] + " × " + val[1]);
-    db.ref("users/" + user + "/dimensions").set(val, () => { if (cb) cb(); });
+    db.ref("users/" + user + "/dimensions").set(val, () => {
+        if (cb) cb();
+    });
 }
 
 function updateLatestFrame(val, cb) {
-    db.ref("users/" + user + "/latestFrame").set(val, () => { if (cb) cb(); });
+    db.ref("users/" + user + "/latestFrame").set(val, () => {
+        if (cb) cb();
+    });
 }
 // ============================= MAIN APP FUNCTIONS ============================
 function handleLatestData() {
     data.innerHTML = getDataString();
-    if(latestData === 0) {
+    if (latestData === 0) {
         header.style.background = "linear-gradient(rgba(244,67,54,1), rgba(0,0,0,0))";
         data.style.backgroundColor = "rgb(244,67,54)";
-        [].forEach.call(document.getElementsByClassName("ldBar-label"), function(div) {
-        	div.style.backgroundColor = "rgb(244,67,54)";
+        [].forEach.call(document.getElementsByClassName("ldBar-label"), function (div) {
+            div.style.backgroundColor = "rgb(244,67,54)";
         });
         document.getElementById("warrior").ldBar.set(0);
         document.getElementById("tree").ldBar.set(0);
@@ -182,8 +207,8 @@ function handleLatestData() {
     } else if (latestData === 1) {
         header.style.background = "linear-gradient(rgba(249,168,37,1), rgba(0,0,0,0))";
         data.style.backgroundColor = "rgb(249,168,37)";
-        [].forEach.call(document.getElementsByClassName("ldBar-label"), function(div) {
-        	div.style.backgroundColor = "rgb(249,168,37)";
+        [].forEach.call(document.getElementsByClassName("ldBar-label"), function (div) {
+            div.style.backgroundColor = "rgb(249,168,37)";
         });
         document.getElementById("warrior").ldBar.set(1);
         document.getElementById("tree").ldBar.set(1);
@@ -191,8 +216,8 @@ function handleLatestData() {
     } else {
         header.style.background = "linear-gradient(rgba(0,200,83,.45), rgba(0,0,0,0))";
         data.style.backgroundColor = "rgb(0,200,83)";
-        [].forEach.call(document.getElementsByClassName("ldBar-label"), function(div) {
-        	div.style.backgroundColor = "rgb(0,200,83)";
+        [].forEach.call(document.getElementsByClassName("ldBar-label"), function (div) {
+            div.style.backgroundColor = "rgb(0,200,83)";
         });
     }
 }
@@ -263,7 +288,7 @@ function getReSize() {
 }
 
 function getDataString() {
-    if(latestData === 0) return "No person detected in frame...";
+    if (latestData === 0) return "No person detected in frame...";
     else if (latestData === 1) return "Please get your entire body in frame!";
     var rtrn = "";
     for (var row in latestData) rtrn += "\'" + row + "\': " + latestData[row] + " | "; //rtrn += "\'"+angleNames[angle]+"\': "+latestData[angle]+" | ";
@@ -279,7 +304,12 @@ function convertMS(ms) {
     m = m % 60;
     d = Math.floor(h / 24);
     h = h % 24;
-    return { d: d, h: h, m: m, s: s };
+    return {
+        d: d,
+        h: h,
+        m: m,
+        s: s
+    };
 }
 // ================ OLD CODE USED FOR TESTING AND UNDERSTANDING ================
 // firebase serve -o $IP -p 8080 | browser-sync start --proxy 0.0.0.0:8080 --port 8081 --files "src/**/*"
