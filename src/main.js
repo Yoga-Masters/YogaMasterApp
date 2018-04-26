@@ -16,7 +16,13 @@ var confidences;
 var mediaDevice;
 var selectedType;
 var imageCapture;
+var trainingData;
 var latestTrainFrame;
+var poseIndex = {
+    "warriorii": 0,
+    "tree": 1,
+    "triangle": 2
+};
 var btn = document.getElementById("btn");
 var data = document.getElementById("data");
 var video = document.getElementById("video");
@@ -31,6 +37,13 @@ var grabLatestFrameData = document.getElementById("grabFrameCanvasData");
 // var angleNames = ["neck", "l_shoulder", "r_shoulder", "l_arm", "r_arm", "l_farm", "r_farm", "l_spine", "r_spine", "l_thigh", "r_thigh", "l_leg", "r_leg"]
 // ============================ FIREBASE SETUP =================================
 function initApp() {
+    var trainingfb = firebase.initializeApp({
+        apiKey: "AIzaSyBfzO0wkhLUX0sSKeQi1d7uMvvJrf7Ti4s",
+        authDomain: "yoga-master-training-db.firebaseapp.com",
+        databaseURL: "https://yoga-master-training-db.firebaseio.com",
+        projectId: "yoga-master-training-db"
+    }, "trainingdb");
+    tdb = trainingfb.database();
     auth = firebase.auth();
     db = firebase.database();
     ui = new firebaseui.auth.AuthUI(auth);
@@ -79,28 +92,31 @@ function initApp() {
 }
 // ========================= PASSIVE FIREBASE FUNCTIONS ========================
 function setupAppAndListeners(cb) {
-    db.ref("types").once("value", snap => {
-        types = snap.val();
-        document.querySelectorAll("#selectedData option").forEach(option => option.remove());
-        for (var key of Object.keys(types)) {
-            var option = document.createElement("option");
-            option.text = types[key].toUpperCase();
-            option.value = key;
-            selectedData.appendChild(option);
-        }
-        selectedType = selectedData.options[selectedData.selectedIndex].value;
-    });
-    db.ref("users/" + user).once("value", snap => {
-        var snapshot = snap.val();
-        lastTime = snapshot.lastUpdated;
-        latestData = snapshot.latestTensorData.datatype1;
-        handleLatestData();
-        welcome.innerHTML = "Welcome " + snapshot.name;
-        openposeFrame.setAttribute("src", snapshot.latestOpenPoseFrame);
-        tensorflowFrame.setAttribute("src", snapshot.latestTensorData.latestProcessedFrame);
-        updateUpdating(false, () => {
-            updateConfidences(0, 0, 0, () => {
-                cb();
+    tdb.ref("frames").once("value", snap => {
+        frames = snap.val();
+        db.ref("types").once("value", snap => {
+            types = snap.val();
+            document.querySelectorAll("#selectedData option").forEach(option => option.remove());
+            for (var key of Object.keys(types)) {
+                var option = document.createElement("option");
+                option.text = types[key].toUpperCase();
+                option.value = key;
+                selectedData.appendChild(option);
+            }
+            selectedType = selectedData.options[selectedData.selectedIndex].value;
+            db.ref("users/" + user).once("value", snap => {
+                var snapshot = snap.val();
+                lastTime = snapshot.lastUpdated;
+                latestData = snapshot.latestTensorData.datatype1;
+                handleLatestData();
+                welcome.innerHTML = "Welcome " + snapshot.name;
+                openposeFrame.setAttribute("src", snapshot.latestOpenPoseFrame);
+                tensorflowFrame.setAttribute("src", snapshot.latestTensorData.latestProcessedFrame);
+                updateUpdating(false, () => {
+                    updateConfidences(0, 0, 0, () => {
+                        cb();
+                    });
+                });
             });
         });
     });
@@ -136,6 +152,31 @@ function setupAppAndListeners(cb) {
         handleLatestData();
     });
 }
+// ============================= FIREBASE FUNCTIONS ============================
+function getTrainingData() {
+    trainingData = {};
+    trainingData["DEFAULT_CLASSES"] = ['Iris-setosa', 'Iris-versicolor', 'Iris-virginica'];
+    trainingData["DEFAULT_NUM_CLASSES"] = trainingData["DEFAULT_CLASSES"].length;
+    trainingData["DEFAULT_DATA"] = JSON.parse("{\"data\": [[5.1, 3.5, 1.4, 0.2, 0], [4.9, 3.0, 1.4, 0.2, 0], [4.7, 3.2, 1.3, 0.2, 0], [4.6, 3.1, 1.5, 0.2, 0], [5.0, 3.6, 1.4, 0.2, 0], [5.4, 3.9, 1.7, 0.4, 0], [4.6, 3.4, 1.4, 0.3, 0], [5.0, 3.4, 1.5, 0.2, 0], [4.4, 2.9, 1.4, 0.2, 0], [4.9, 3.1, 1.5, 0.1, 0], [5.4, 3.7, 1.5, 0.2, 0], [4.8, 3.4, 1.6, 0.2, 0], [4.8, 3.0, 1.4, 0.1, 0], [4.3, 3.0, 1.1, 0.1, 0], [5.8, 4.0, 1.2, 0.2, 0], [5.7, 4.4, 1.5, 0.4, 0], [5.4, 3.9, 1.3, 0.4, 0], [5.1, 3.5, 1.4, 0.3, 0], [5.7, 3.8, 1.7, 0.3, 0], [5.1, 3.8, 1.5, 0.3, 0], [5.4, 3.4, 1.7, 0.2, 0], [5.1, 3.7, 1.5, 0.4, 0], [4.6, 3.6, 1.0, 0.2, 0], [5.1, 3.3, 1.7, 0.5, 0], [4.8, 3.4, 1.9, 0.2, 0], [5.0, 3.0, 1.6, 0.2, 0], [5.0, 3.4, 1.6, 0.4, 0], [5.2, 3.5, 1.5, 0.2, 0], [5.2, 3.4, 1.4, 0.2, 0], [4.7, 3.2, 1.6, 0.2, 0], [4.8, 3.1, 1.6, 0.2, 0], [5.4, 3.4, 1.5, 0.4, 0], [5.2, 4.1, 1.5, 0.1, 0], [5.5, 4.2, 1.4, 0.2, 0], [4.9, 3.1, 1.5, 0.1, 0], [5.0, 3.2, 1.2, 0.2, 0], [5.5, 3.5, 1.3, 0.2, 0], [4.9, 3.1, 1.5, 0.1, 0], [4.4, 3.0, 1.3, 0.2, 0], [5.1, 3.4, 1.5, 0.2, 0], [5.0, 3.5, 1.3, 0.3, 0], [4.5, 2.3, 1.3, 0.3, 0], [4.4, 3.2, 1.3, 0.2, 0], [5.0, 3.5, 1.6, 0.6, 0], [5.1, 3.8, 1.9, 0.4, 0], [4.8, 3.0, 1.4, 0.3, 0], [5.1, 3.8, 1.6, 0.2, 0], [4.6, 3.2, 1.4, 0.2, 0], [5.3, 3.7, 1.5, 0.2, 0], [5.0, 3.3, 1.4, 0.2, 0], [7.0, 3.2, 4.7, 1.4, 1], [6.4, 3.2, 4.5, 1.5, 1], [6.9, 3.1, 4.9, 1.5, 1], [5.5, 2.3, 4.0, 1.3, 1], [6.5, 2.8, 4.6, 1.5, 1], [5.7, 2.8, 4.5, 1.3, 1], [6.3, 3.3, 4.7, 1.6, 1], [4.9, 2.4, 3.3, 1.0, 1], [6.6, 2.9, 4.6, 1.3, 1], [5.2, 2.7, 3.9, 1.4, 1], [5.0, 2.0, 3.5, 1.0, 1], [5.9, 3.0, 4.2, 1.5, 1], [6.0, 2.2, 4.0, 1.0, 1], [6.1, 2.9, 4.7, 1.4, 1], [5.6, 2.9, 3.6, 1.3, 1], [6.7, 3.1, 4.4, 1.4, 1], [5.6, 3.0, 4.5, 1.5, 1], [5.8, 2.7, 4.1, 1.0, 1], [6.2, 2.2, 4.5, 1.5, 1], [5.6, 2.5, 3.9, 1.1, 1], [5.9, 3.2, 4.8, 1.8, 1], [6.1, 2.8, 4.0, 1.3, 1], [6.3, 2.5, 4.9, 1.5, 1], [6.1, 2.8, 4.7, 1.2, 1], [6.4, 2.9, 4.3, 1.3, 1], [6.6, 3.0, 4.4, 1.4, 1], [6.8, 2.8, 4.8, 1.4, 1], [6.7, 3.0, 5.0, 1.7, 1], [6.0, 2.9, 4.5, 1.5, 1], [5.7, 2.6, 3.5, 1.0, 1], [5.5, 2.4, 3.8, 1.1, 1], [5.5, 2.4, 3.7, 1.0, 1], [5.8, 2.7, 3.9, 1.2, 1], [6.0, 2.7, 5.1, 1.6, 1], [5.4, 3.0, 4.5, 1.5, 1], [6.0, 3.4, 4.5, 1.6, 1], [6.7, 3.1, 4.7, 1.5, 1], [6.3, 2.3, 4.4, 1.3, 1], [5.6, 3.0, 4.1, 1.3, 1], [5.5, 2.5, 4.0, 1.3, 1], [5.5, 2.6, 4.4, 1.2, 1], [6.1, 3.0, 4.6, 1.4, 1], [5.8, 2.6, 4.0, 1.2, 1], [5.0, 2.3, 3.3, 1.0, 1], [5.6, 2.7, 4.2, 1.3, 1], [5.7, 3.0, 4.2, 1.2, 1], [5.7, 2.9, 4.2, 1.3, 1], [6.2, 2.9, 4.3, 1.3, 1], [5.1, 2.5, 3.0, 1.1, 1], [5.7, 2.8, 4.1, 1.3, 1], [6.3, 3.3, 6.0, 2.5, 2], [5.8, 2.7, 5.1, 1.9, 2], [7.1, 3.0, 5.9, 2.1, 2], [6.3, 2.9, 5.6, 1.8, 2], [6.5, 3.0, 5.8, 2.2, 2], [7.6, 3.0, 6.6, 2.1, 2], [4.9, 2.5, 4.5, 1.7, 2], [7.3, 2.9, 6.3, 1.8, 2], [6.7, 2.5, 5.8, 1.8, 2], [7.2, 3.6, 6.1, 2.5, 2], [6.5, 3.2, 5.1, 2.0, 2], [6.4, 2.7, 5.3, 1.9, 2], [6.8, 3.0, 5.5, 2.1, 2], [5.7, 2.5, 5.0, 2.0, 2], [5.8, 2.8, 5.1, 2.4, 2], [6.4, 3.2, 5.3, 2.3, 2], [6.5, 3.0, 5.5, 1.8, 2], [7.7, 3.8, 6.7, 2.2, 2], [7.7, 2.6, 6.9, 2.3, 2], [6.0, 2.2, 5.0, 1.5, 2], [6.9, 3.2, 5.7, 2.3, 2], [5.6, 2.8, 4.9, 2.0, 2], [7.7, 2.8, 6.7, 2.0, 2], [6.3, 2.7, 4.9, 1.8, 2], [6.7, 3.3, 5.7, 2.1, 2], [7.2, 3.2, 6.0, 1.8, 2], [6.2, 2.8, 4.8, 1.8, 2], [6.1, 3.0, 4.9, 1.8, 2], [6.4, 2.8, 5.6, 2.1, 2], [7.2, 3.0, 5.8, 1.6, 2], [7.4, 2.8, 6.1, 1.9, 2], [7.9, 3.8, 6.4, 2.0, 2], [6.4, 2.8, 5.6, 2.2, 2], [6.3, 2.8, 5.1, 1.5, 2], [6.1, 2.6, 5.6, 1.4, 2], [7.7, 3.0, 6.1, 2.3, 2], [6.3, 3.4, 5.6, 2.4, 2], [6.4, 3.1, 5.5, 1.8, 2], [6.0, 3.0, 4.8, 1.8, 2], [6.9, 3.1, 5.4, 2.1, 2], [6.7, 3.1, 5.6, 2.4, 2], [6.9, 3.1, 5.1, 2.3, 2], [5.8, 2.7, 5.1, 1.9, 2], [6.8, 3.2, 5.9, 2.3, 2], [6.7, 3.3, 5.7, 2.5, 2], [6.7, 3.0, 5.2, 2.3, 2], [6.3, 2.5, 5.0, 1.9, 2], [6.5, 3.0, 5.2, 2.0, 2], [6.2, 3.4, 5.4, 2.3, 2], [5.9, 3.0, 5.1, 1.8, 2]]}").data;
+    console.log(trainingData);
+    var data = frames;  
+    for (const type in types) trainingData[type] = [];
+    for (const key of Object.keys(data))
+        for (const type in types)
+            if (data[key][type] && !(data[key][type] == 0 || data[key][type] == 1)) {
+                data[key][type].push(poseIndex[data[key].pose]);
+                trainingData[type].push(data[key][type]);
+            }
+    for (const type in types) {
+        var dType = types[type].toUpperCase();
+        trainingData[dType + "_CLASSES"] = Object.keys(poseIndex);
+        trainingData[dType + "_NUM_CLASSES"] = trainingData[dType + "_CLASSES"].length;
+        trainingData[dType + "_DATA"] = trainingData[type];
+    }
+    trainingData["IRIS_CLASSES"] = trainingData["DEFAULT_CLASSES"];
+    trainingData["IRIS_NUM_CLASSES"] = trainingData["DEFAULT_NUM_CLASSES"];
+    trainingData["IRIS_DATA"] = trainingData["DEFAULT_DATA"];
+}
 
 function ensureUserExists(user, name, time, cb) {
     db.ref("users/").child(user).once("value", snap => {
@@ -164,7 +205,7 @@ function ensureUserExists(user, name, time, cb) {
         } else cb();
     });
 }
-// ============================= FIREBASE FUNCTIONS ============================
+
 function updateUpdating(val, cb) {
     resize();
     console.log("Updating recording to " + (val ? "playing" : "stopped") + ".") // @ " + (new Date()).toLocaleString() + "...");
@@ -174,7 +215,7 @@ function updateUpdating(val, cb) {
 }
 
 function updateConfidences(warriorii, tree, triangle, cb) {
-    console.log("Updating confidences; warriorii to " + warriorii + ", tree to " + tree + ", & triangle to " + triangle + ".");// @ " + (new Date()).toLocaleString() + "...");
+    console.log("Updating confidences; warriorii to " + warriorii + ", tree to " + tree + ", & triangle to " + triangle + "."); // @ " + (new Date()).toLocaleString() + "...");
     db.ref("users/" + user + "/latestConfidences").set({
         "warriorii": warriorii,
         "tree": tree,
@@ -268,6 +309,8 @@ async function iris() { // The main function of the Iris demo.
 }
 
 function trainModel(cb) {
+    getTrainingData();
+    console.log(trainingData);
     canPredict = false;
     var time = Date.now();
     console.log("Training model...");
@@ -307,22 +350,24 @@ function getDataString() {
     if (latestData === 0) return "No person detected in frame...";
     else if (latestData === 1) return "Please get your entire body in frame!";
     var rtrn;
-    var confs = Object.values(Object.assign({}, confidences)).map(x => Number.parseFloat(x));
-    var maxIndx = confs.indexOf(Math.max.apply({}, confs));
-    var maxPose = Object.keys(confidences)[maxIndx];
-    var maxConf = Number.parseFloat(Object.values(confidences)[maxIndx]);
-    if(maxConf < .5) rtrn = "I detected you, but not doing a specific pose..."
-    else {
-        rtrn = "I detected you doing "+maxPose+" pose! You're";
-        if(maxConf < .6) rtrn += " kinda there...";
-        else if(maxConf < .7) rtrn += "... not that bad at it!";
-        else if(maxConf < .8) rtrn += " pretty good!";
-        else if(maxConf < .9) rtrn += " <i>so</i> close to being perfect!";
-        else rtrn += " a yoga master at "+maxPose+"!";
+    if(confidences) {
+        var confs = Object.values(Object.assign({}, confidences)).map(x => Number.parseFloat(x));
+        var maxIndx = confs.indexOf(Math.max.apply({}, confs));
+        var maxPose = Object.keys(confidences)[maxIndx];
+        var maxConf = Number.parseFloat(Object.values(confidences)[maxIndx]);
+        if (maxConf < .5) rtrn = "I detected you, but not doing a specific pose..."
+        else {
+            rtrn = "I detected you doing " + maxPose + " pose! You're";
+            if (maxConf < .6) rtrn += " kinda there...";
+            else if (maxConf < .7) rtrn += "... not that bad at it!";
+            else if (maxConf < .8) rtrn += " pretty good!";
+            else if (maxConf < .9) rtrn += " <i>so</i> close to being perfect!";
+            else rtrn += " a yoga master at " + maxPose + "!";
+        }
+        rtrn += "<br>";
+        for (var row in latestData) rtrn += "\'" + row + "\': " + latestData[row] + " | "; //rtrn += "\'"+angleNames[angle]+"\': "+latestData[angle]+" | ";
+        return rtrn.slice(0, -2);
     }
-    rtrn += "<br>";
-    for (var row in latestData) rtrn += "\'" + row + "\': " + latestData[row] + " | "; //rtrn += "\'"+angleNames[angle]+"\': "+latestData[angle]+" | ";
-    return rtrn.slice(0, -2);
 }
 
 function convertMS(ms) {
