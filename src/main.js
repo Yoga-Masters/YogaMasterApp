@@ -12,6 +12,7 @@ var updating;
 var lastTime;
 var canPredict;
 var latestData;
+var confidences;
 var mediaDevice;
 var selectedType;
 var imageCapture;
@@ -117,21 +118,22 @@ function setupAppAndListeners(cb) {
         grabLatestFrameData.style.height = snap.val()[1] + "px";
         grabLatestFrame.style.width = (100 * (snap.val()[0] / snap.val()[1])) + "px";
         data.style.left = (100 * (snap.val()[0] / snap.val()[1]) + 20) + "px";
-        data.style.right = (100 * ((1280 / snap.val()[1]) > (snap.val()[0] / snap.val()[1]) ? (1280 / snap.val()[1]) : (snap.val()[0] / snap.val()[1])) + 130) + "px";
+        data.style.right = (100 * (snap.val()[0] / snap.val()[1]) + 130) + "px";
     });
     db.ref("users/" + user + "/latestTensorData").on("value", snap => {
         var snapshot = snap.val();
         latestData = snapshot[selectedType];
-        handleLatestData();
         latestTrainFrame = snapshot.latestProcessedFrame;
         tensorflowFrame.setAttribute("src", snapshot.latestProcessedFrame);
         runTensorflow(latestData, latestTrainFrame);
+        handleLatestData();
     });
     db.ref("users/" + user + "/latestConfidences").on("value", snap => {
-        var data = snap.val();
-        document.getElementById("warrior").ldBar.set(data.warriorii * 100);
-        document.getElementById("tree").ldBar.set(data.tree * 100);
-        document.getElementById("triangle").ldBar.set(data.triangle * 100);
+        confidences = snap.val();
+        document.getElementById("warrior").ldBar.set(confidences.warriorii * 100);
+        document.getElementById("tree").ldBar.set(confidences.tree * 100);
+        document.getElementById("triangle").ldBar.set(confidences.triangle * 100);
+        handleLatestData();
     });
 }
 
@@ -165,14 +167,14 @@ function ensureUserExists(user, name, time, cb) {
 // ============================= FIREBASE FUNCTIONS ============================
 function updateUpdating(val, cb) {
     resize();
-    console.log("Updating recording to " + (val ? "playing" : "stopped") + " @ " + (new Date()).toLocaleString() + "...");
+    console.log("Updating recording to " + (val ? "playing" : "stopped") + ".") // @ " + (new Date()).toLocaleString() + "...");
     db.ref("users/" + user + "/updating").set(val, () => {
         if (cb) cb();
     });
 }
 
 function updateConfidences(warriorii, tree, triangle, cb) {
-    console.log("Updating confidences; warriorii to " + warriorii + ", tree to " + tree + ", & triangle to " + triangle + " @ " + (new Date()).toLocaleString() + "...");
+    console.log("Updating confidences; warriorii to " + warriorii + ", tree to " + tree + ", & triangle to " + triangle + ".");// @ " + (new Date()).toLocaleString() + "...");
     db.ref("users/" + user + "/latestConfidences").set({
         "warriorii": warriorii,
         "tree": tree,
@@ -183,7 +185,7 @@ function updateConfidences(warriorii, tree, triangle, cb) {
 }
 
 function updateDims(val, cb) {
-    console.log("Updating window dimensions to " + val[0] + " × " + val[1]);
+    console.log("Updating video dimensions to " + val[0] + " × " + val[1]);
     db.ref("users/" + user + "/dimensions").set(val, () => {
         if (cb) cb();
     });
@@ -281,10 +283,11 @@ function runTensorflow(data, image) {
         console.log("Model training is not complete; trying later...");
         return;
     }
-    console.log("Running Tensorflow with:");
-    console.log("data");
-    console.log(data);
+    // console.log("Running Tensorflow with:");
+    // console.log("data");
+    // console.log(data);
     // TODO: Need to put in code to run Tensorflow.JS
+    // Need to update confidences using updateConfidences(warriorii, tree, triangle, cb)
 }
 // ============================= HELPER FUNCTIONS ==============================
 function updateStuff() {
@@ -303,7 +306,21 @@ function getReSize() {
 function getDataString() {
     if (latestData === 0) return "No person detected in frame...";
     else if (latestData === 1) return "Please get your entire body in frame!";
-    var rtrn = "";
+    var rtrn;
+    var confs = Object.values(Object.assign({}, confidences)).map(x => Number.parseFloat(x));
+    var maxIndx = confs.indexOf(Math.max.apply({}, confs));
+    var maxPose = Object.keys(confidences)[maxIndx];
+    var maxConf = Number.parseFloat(Object.values(confidences)[maxIndx]);
+    if(maxConf < .5) rtrn = "I detected you, but not doing a specific pose..."
+    else {
+        rtrn = "I detected you doing "+maxPose+" pose! You're";
+        if(maxConf < .6) rtrn += " kinda there...";
+        else if(maxConf < .7) rtrn += "... not that bad at it!";
+        else if(maxConf < .8) rtrn += " pretty good!";
+        else if(maxConf < .9) rtrn += " <i>so</i> close to being perfect!";
+        else rtrn += " a yoga master at "+maxPose+"!";
+    }
+    rtrn += "<br>";
     for (var row in latestData) rtrn += "\'" + row + "\': " + latestData[row] + " | "; //rtrn += "\'"+angleNames[angle]+"\': "+latestData[angle]+" | ";
     return rtrn.slice(0, -2);
 }
