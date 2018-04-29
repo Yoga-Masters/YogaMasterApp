@@ -316,7 +316,7 @@ function trainModel(cb) {
 }
 
 function runTensorflow(data, image) {
-    if (canPredict) console.log("Model training is not complete; trying later...");
+    if (!canPredict) console.log("Model training is not complete; trying later...");
     else {
         console.log("Running Tensorflow with:");
         console.log(data);
