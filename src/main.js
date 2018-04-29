@@ -322,7 +322,7 @@ function trainModel(cb) {
 }
 
 function runTensorflow(data, image) {
-    if (canPredict) {
+    if (!canPredict) {
         console.log("Model training is not complete; trying later...");
         return;
     }
