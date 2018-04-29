@@ -16,7 +16,6 @@ var confidences;
 var mediaDevice;
 var selectedType;
 var imageCapture;
-var trainingData;
 var latestTrainFrame;
 var poseIndex = {
     "warriorii": 0,
@@ -34,9 +33,10 @@ var openposeFrame = document.getElementById("openposeCanvas");
 var tensorflowFrame = document.getElementById("tensorCanvas");
 var grabLatestFrame = document.getElementById("grabFrameCanvas");
 var grabLatestFrameData = document.getElementById("grabFrameCanvasData");
-// var angleNames = ["neck", "l_shoulder", "r_shoulder", "l_arm", "r_arm", "l_farm", "r_farm", "l_spine", "r_spine", "l_thigh", "r_thigh", "l_leg", "r_leg"]
 // ============================ FIREBASE SETUP =================================
 function initApp() {
+    auth = firebase.auth();
+    db = firebase.database();
     var trainingfb = firebase.initializeApp({
         apiKey: "AIzaSyBfzO0wkhLUX0sSKeQi1d7uMvvJrf7Ti4s",
         authDomain: "yoga-master-training-db.firebaseapp.com",
@@ -44,8 +44,6 @@ function initApp() {
         projectId: "yoga-master-training-db"
     }, "trainingdb");
     tdb = trainingfb.database();
-    auth = firebase.auth();
-    db = firebase.database();
     ui = new firebaseui.auth.AuthUI(auth);
     ui.start("#firebaseui-auth-container", {
         "signInFlow": "popup",
@@ -65,20 +63,20 @@ function initApp() {
                 console.log("Logging in as " + currentUser.displayName + " with id " + user + "...");
                 ensureUserExists(user, currentUser.displayName, time, () => {
                     setupAppAndListeners(() => {
-                        setInterval(updateStuff, 1000);
-                        resize();
-                        window.onresize = resize;
-                        selectedData.onchange = function (e) {
-                            selectedType = selectedData.options[selectedData.selectedIndex].value;
-                            trainModel();
-                        }
-                        btn.addEventListener("click", () => {
-                            updateUpdating(!updating);
-                        });
-                        mediaDevice = navigator.mediaDevices.getUserMedia({
-                            video: true
-                        });
                         trainModel(() => {
+                            setInterval(updateTime, 1000);
+                            resize();
+                            window.onresize = resize;
+                            selectedData.onchange = function (e) {
+                                selectedType = selectedData.options[selectedData.selectedIndex].value;
+                                trainModel();
+                            }
+                            btn.addEventListener("click", () => {
+                                updateUpdating(!updating);
+                            });
+                            mediaDevice = navigator.mediaDevices.getUserMedia({
+                                video: true
+                            });
                             onGetUserMediaButtonClick();
                             document.getElementById("background").style.display = "none";
                             console.log("Setup app in " + (Date.now() - time) + "ms");
@@ -92,30 +90,27 @@ function initApp() {
 }
 // ========================= PASSIVE FIREBASE FUNCTIONS ========================
 function setupAppAndListeners(cb) {
-    tdb.ref("frames").once("value", snap => {
-        frames = snap.val();
-        db.ref("types").once("value", snap => {
-            types = snap.val();
-            document.querySelectorAll("#selectedData option").forEach(option => option.remove());
-            for (var key of Object.keys(types)) {
-                var option = document.createElement("option");
-                option.text = types[key].toUpperCase();
-                option.value = key;
-                selectedData.appendChild(option);
-            }
-            selectedType = selectedData.options[selectedData.selectedIndex].value;
-            db.ref("users/" + user).once("value", snap => {
-                var snapshot = snap.val();
-                lastTime = snapshot.lastUpdated;
-                latestData = snapshot.latestTensorData.datatype1;
-                handleLatestData();
-                welcome.innerHTML = "Welcome " + snapshot.name;
-                openposeFrame.setAttribute("src", snapshot.latestOpenPoseFrame);
-                tensorflowFrame.setAttribute("src", snapshot.latestTensorData.latestProcessedFrame);
-                updateUpdating(false, () => {
-                    updateConfidences(0, 0, 0, () => {
-                        cb();
-                    });
+    db.ref("types").once("value", snap => {
+        types = snap.val();
+        document.querySelectorAll("#selectedData option").forEach(option => option.remove());
+        for (var key of Object.keys(types)) {
+            var option = document.createElement("option");
+            option.text = types[key].toUpperCase();
+            option.value = key;
+            selectedData.appendChild(option);
+        }
+        selectedType = selectedData.options[selectedData.selectedIndex].value;
+        db.ref("users/" + user).once("value", snap => {
+            var snapshot = snap.val();
+            lastTime = snapshot.lastUpdated;
+            latestData = snapshot.latestTensorData.datatype1;
+            handleLatestData();
+            welcome.innerHTML = "Welcome " + snapshot.name;
+            openposeFrame.setAttribute("src", snapshot.latestOpenPoseFrame);
+            tensorflowFrame.setAttribute("src", snapshot.latestTensorData.latestProcessedFrame);
+            updateUpdating(false, () => {
+                updateConfidences(0, 0, 0, () => {
+                    cb();
                 });
             });
         });
@@ -154,28 +149,27 @@ function setupAppAndListeners(cb) {
 }
 // ============================= FIREBASE FUNCTIONS ============================
 function getTrainingData() {
-    trainingData = {};
-    trainingData["DEFAULT_CLASSES"] = ['Iris-setosa', 'Iris-versicolor', 'Iris-virginica'];
-    trainingData["DEFAULT_NUM_CLASSES"] = trainingData["DEFAULT_CLASSES"].length;
-    trainingData["DEFAULT_DATA"] = JSON.parse("{\"data\": [[5.1, 3.5, 1.4, 0.2, 0], [4.9, 3.0, 1.4, 0.2, 0], [4.7, 3.2, 1.3, 0.2, 0], [4.6, 3.1, 1.5, 0.2, 0], [5.0, 3.6, 1.4, 0.2, 0], [5.4, 3.9, 1.7, 0.4, 0], [4.6, 3.4, 1.4, 0.3, 0], [5.0, 3.4, 1.5, 0.2, 0], [4.4, 2.9, 1.4, 0.2, 0], [4.9, 3.1, 1.5, 0.1, 0], [5.4, 3.7, 1.5, 0.2, 0], [4.8, 3.4, 1.6, 0.2, 0], [4.8, 3.0, 1.4, 0.1, 0], [4.3, 3.0, 1.1, 0.1, 0], [5.8, 4.0, 1.2, 0.2, 0], [5.7, 4.4, 1.5, 0.4, 0], [5.4, 3.9, 1.3, 0.4, 0], [5.1, 3.5, 1.4, 0.3, 0], [5.7, 3.8, 1.7, 0.3, 0], [5.1, 3.8, 1.5, 0.3, 0], [5.4, 3.4, 1.7, 0.2, 0], [5.1, 3.7, 1.5, 0.4, 0], [4.6, 3.6, 1.0, 0.2, 0], [5.1, 3.3, 1.7, 0.5, 0], [4.8, 3.4, 1.9, 0.2, 0], [5.0, 3.0, 1.6, 0.2, 0], [5.0, 3.4, 1.6, 0.4, 0], [5.2, 3.5, 1.5, 0.2, 0], [5.2, 3.4, 1.4, 0.2, 0], [4.7, 3.2, 1.6, 0.2, 0], [4.8, 3.1, 1.6, 0.2, 0], [5.4, 3.4, 1.5, 0.4, 0], [5.2, 4.1, 1.5, 0.1, 0], [5.5, 4.2, 1.4, 0.2, 0], [4.9, 3.1, 1.5, 0.1, 0], [5.0, 3.2, 1.2, 0.2, 0], [5.5, 3.5, 1.3, 0.2, 0], [4.9, 3.1, 1.5, 0.1, 0], [4.4, 3.0, 1.3, 0.2, 0], [5.1, 3.4, 1.5, 0.2, 0], [5.0, 3.5, 1.3, 0.3, 0], [4.5, 2.3, 1.3, 0.3, 0], [4.4, 3.2, 1.3, 0.2, 0], [5.0, 3.5, 1.6, 0.6, 0], [5.1, 3.8, 1.9, 0.4, 0], [4.8, 3.0, 1.4, 0.3, 0], [5.1, 3.8, 1.6, 0.2, 0], [4.6, 3.2, 1.4, 0.2, 0], [5.3, 3.7, 1.5, 0.2, 0], [5.0, 3.3, 1.4, 0.2, 0], [7.0, 3.2, 4.7, 1.4, 1], [6.4, 3.2, 4.5, 1.5, 1], [6.9, 3.1, 4.9, 1.5, 1], [5.5, 2.3, 4.0, 1.3, 1], [6.5, 2.8, 4.6, 1.5, 1], [5.7, 2.8, 4.5, 1.3, 1], [6.3, 3.3, 4.7, 1.6, 1], [4.9, 2.4, 3.3, 1.0, 1], [6.6, 2.9, 4.6, 1.3, 1], [5.2, 2.7, 3.9, 1.4, 1], [5.0, 2.0, 3.5, 1.0, 1], [5.9, 3.0, 4.2, 1.5, 1], [6.0, 2.2, 4.0, 1.0, 1], [6.1, 2.9, 4.7, 1.4, 1], [5.6, 2.9, 3.6, 1.3, 1], [6.7, 3.1, 4.4, 1.4, 1], [5.6, 3.0, 4.5, 1.5, 1], [5.8, 2.7, 4.1, 1.0, 1], [6.2, 2.2, 4.5, 1.5, 1], [5.6, 2.5, 3.9, 1.1, 1], [5.9, 3.2, 4.8, 1.8, 1], [6.1, 2.8, 4.0, 1.3, 1], [6.3, 2.5, 4.9, 1.5, 1], [6.1, 2.8, 4.7, 1.2, 1], [6.4, 2.9, 4.3, 1.3, 1], [6.6, 3.0, 4.4, 1.4, 1], [6.8, 2.8, 4.8, 1.4, 1], [6.7, 3.0, 5.0, 1.7, 1], [6.0, 2.9, 4.5, 1.5, 1], [5.7, 2.6, 3.5, 1.0, 1], [5.5, 2.4, 3.8, 1.1, 1], [5.5, 2.4, 3.7, 1.0, 1], [5.8, 2.7, 3.9, 1.2, 1], [6.0, 2.7, 5.1, 1.6, 1], [5.4, 3.0, 4.5, 1.5, 1], [6.0, 3.4, 4.5, 1.6, 1], [6.7, 3.1, 4.7, 1.5, 1], [6.3, 2.3, 4.4, 1.3, 1], [5.6, 3.0, 4.1, 1.3, 1], [5.5, 2.5, 4.0, 1.3, 1], [5.5, 2.6, 4.4, 1.2, 1], [6.1, 3.0, 4.6, 1.4, 1], [5.8, 2.6, 4.0, 1.2, 1], [5.0, 2.3, 3.3, 1.0, 1], [5.6, 2.7, 4.2, 1.3, 1], [5.7, 3.0, 4.2, 1.2, 1], [5.7, 2.9, 4.2, 1.3, 1], [6.2, 2.9, 4.3, 1.3, 1], [5.1, 2.5, 3.0, 1.1, 1], [5.7, 2.8, 4.1, 1.3, 1], [6.3, 3.3, 6.0, 2.5, 2], [5.8, 2.7, 5.1, 1.9, 2], [7.1, 3.0, 5.9, 2.1, 2], [6.3, 2.9, 5.6, 1.8, 2], [6.5, 3.0, 5.8, 2.2, 2], [7.6, 3.0, 6.6, 2.1, 2], [4.9, 2.5, 4.5, 1.7, 2], [7.3, 2.9, 6.3, 1.8, 2], [6.7, 2.5, 5.8, 1.8, 2], [7.2, 3.6, 6.1, 2.5, 2], [6.5, 3.2, 5.1, 2.0, 2], [6.4, 2.7, 5.3, 1.9, 2], [6.8, 3.0, 5.5, 2.1, 2], [5.7, 2.5, 5.0, 2.0, 2], [5.8, 2.8, 5.1, 2.4, 2], [6.4, 3.2, 5.3, 2.3, 2], [6.5, 3.0, 5.5, 1.8, 2], [7.7, 3.8, 6.7, 2.2, 2], [7.7, 2.6, 6.9, 2.3, 2], [6.0, 2.2, 5.0, 1.5, 2], [6.9, 3.2, 5.7, 2.3, 2], [5.6, 2.8, 4.9, 2.0, 2], [7.7, 2.8, 6.7, 2.0, 2], [6.3, 2.7, 4.9, 1.8, 2], [6.7, 3.3, 5.7, 2.1, 2], [7.2, 3.2, 6.0, 1.8, 2], [6.2, 2.8, 4.8, 1.8, 2], [6.1, 3.0, 4.9, 1.8, 2], [6.4, 2.8, 5.6, 2.1, 2], [7.2, 3.0, 5.8, 1.6, 2], [7.4, 2.8, 6.1, 1.9, 2], [7.9, 3.8, 6.4, 2.0, 2], [6.4, 2.8, 5.6, 2.2, 2], [6.3, 2.8, 5.1, 1.5, 2], [6.1, 2.6, 5.6, 1.4, 2], [7.7, 3.0, 6.1, 2.3, 2], [6.3, 3.4, 5.6, 2.4, 2], [6.4, 3.1, 5.5, 1.8, 2], [6.0, 3.0, 4.8, 1.8, 2], [6.9, 3.1, 5.4, 2.1, 2], [6.7, 3.1, 5.6, 2.4, 2], [6.9, 3.1, 5.1, 2.3, 2], [5.8, 2.7, 5.1, 1.9, 2], [6.8, 3.2, 5.9, 2.3, 2], [6.7, 3.3, 5.7, 2.5, 2], [6.7, 3.0, 5.2, 2.3, 2], [6.3, 2.5, 5.0, 1.9, 2], [6.5, 3.0, 5.2, 2.0, 2], [6.2, 3.4, 5.4, 2.3, 2], [5.9, 3.0, 5.1, 1.8, 2]]}").data;
-    console.log(trainingData);
-    var data = frames;  
-    for (const type in types) trainingData[type] = [];
-    for (const key of Object.keys(data))
-        for (const type in types)
-            if (data[key][type] && !(data[key][type] == 0 || data[key][type] == 1)) {
-                data[key][type].push(poseIndex[data[key].pose]);
-                trainingData[type].push(data[key][type]);
-            }
-    for (const type in types) {
-        var dType = types[type].toUpperCase();
-        trainingData[dType + "_CLASSES"] = Object.keys(poseIndex);
-        trainingData[dType + "_NUM_CLASSES"] = trainingData[dType + "_CLASSES"].length;
-        trainingData[dType + "_DATA"] = trainingData[type];
-    }
-    trainingData["IRIS_CLASSES"] = trainingData["DEFAULT_CLASSES"];
-    trainingData["IRIS_NUM_CLASSES"] = trainingData["DEFAULT_NUM_CLASSES"];
-    trainingData["IRIS_DATA"] = trainingData["DEFAULT_DATA"];
+    tdb.ref("frames").once("value", snap => {
+        var data = snap.val();
+        var trainingData = {};
+        trainingData["DEFAULT_CLASSES"] = ['Iris-setosa', 'Iris-versicolor', 'Iris-virginica'];
+        trainingData["DEFAULT_NUM_CLASSES"] = trainingData["DEFAULT_CLASSES"].length;
+        trainingData["DEFAULT_DATA"] = JSON.parse("{\"data\": [[5.1, 3.5, 1.4, 0.2, 0], [4.9, 3.0, 1.4, 0.2, 0], [4.7, 3.2, 1.3, 0.2, 0], [4.6, 3.1, 1.5, 0.2, 0], [5.0, 3.6, 1.4, 0.2, 0], [5.4, 3.9, 1.7, 0.4, 0], [4.6, 3.4, 1.4, 0.3, 0], [5.0, 3.4, 1.5, 0.2, 0], [4.4, 2.9, 1.4, 0.2, 0], [4.9, 3.1, 1.5, 0.1, 0], [5.4, 3.7, 1.5, 0.2, 0], [4.8, 3.4, 1.6, 0.2, 0], [4.8, 3.0, 1.4, 0.1, 0], [4.3, 3.0, 1.1, 0.1, 0], [5.8, 4.0, 1.2, 0.2, 0], [5.7, 4.4, 1.5, 0.4, 0], [5.4, 3.9, 1.3, 0.4, 0], [5.1, 3.5, 1.4, 0.3, 0], [5.7, 3.8, 1.7, 0.3, 0], [5.1, 3.8, 1.5, 0.3, 0], [5.4, 3.4, 1.7, 0.2, 0], [5.1, 3.7, 1.5, 0.4, 0], [4.6, 3.6, 1.0, 0.2, 0], [5.1, 3.3, 1.7, 0.5, 0], [4.8, 3.4, 1.9, 0.2, 0], [5.0, 3.0, 1.6, 0.2, 0], [5.0, 3.4, 1.6, 0.4, 0], [5.2, 3.5, 1.5, 0.2, 0], [5.2, 3.4, 1.4, 0.2, 0], [4.7, 3.2, 1.6, 0.2, 0], [4.8, 3.1, 1.6, 0.2, 0], [5.4, 3.4, 1.5, 0.4, 0], [5.2, 4.1, 1.5, 0.1, 0], [5.5, 4.2, 1.4, 0.2, 0], [4.9, 3.1, 1.5, 0.1, 0], [5.0, 3.2, 1.2, 0.2, 0], [5.5, 3.5, 1.3, 0.2, 0], [4.9, 3.1, 1.5, 0.1, 0], [4.4, 3.0, 1.3, 0.2, 0], [5.1, 3.4, 1.5, 0.2, 0], [5.0, 3.5, 1.3, 0.3, 0], [4.5, 2.3, 1.3, 0.3, 0], [4.4, 3.2, 1.3, 0.2, 0], [5.0, 3.5, 1.6, 0.6, 0], [5.1, 3.8, 1.9, 0.4, 0], [4.8, 3.0, 1.4, 0.3, 0], [5.1, 3.8, 1.6, 0.2, 0], [4.6, 3.2, 1.4, 0.2, 0], [5.3, 3.7, 1.5, 0.2, 0], [5.0, 3.3, 1.4, 0.2, 0], [7.0, 3.2, 4.7, 1.4, 1], [6.4, 3.2, 4.5, 1.5, 1], [6.9, 3.1, 4.9, 1.5, 1], [5.5, 2.3, 4.0, 1.3, 1], [6.5, 2.8, 4.6, 1.5, 1], [5.7, 2.8, 4.5, 1.3, 1], [6.3, 3.3, 4.7, 1.6, 1], [4.9, 2.4, 3.3, 1.0, 1], [6.6, 2.9, 4.6, 1.3, 1], [5.2, 2.7, 3.9, 1.4, 1], [5.0, 2.0, 3.5, 1.0, 1], [5.9, 3.0, 4.2, 1.5, 1], [6.0, 2.2, 4.0, 1.0, 1], [6.1, 2.9, 4.7, 1.4, 1], [5.6, 2.9, 3.6, 1.3, 1], [6.7, 3.1, 4.4, 1.4, 1], [5.6, 3.0, 4.5, 1.5, 1], [5.8, 2.7, 4.1, 1.0, 1], [6.2, 2.2, 4.5, 1.5, 1], [5.6, 2.5, 3.9, 1.1, 1], [5.9, 3.2, 4.8, 1.8, 1], [6.1, 2.8, 4.0, 1.3, 1], [6.3, 2.5, 4.9, 1.5, 1], [6.1, 2.8, 4.7, 1.2, 1], [6.4, 2.9, 4.3, 1.3, 1], [6.6, 3.0, 4.4, 1.4, 1], [6.8, 2.8, 4.8, 1.4, 1], [6.7, 3.0, 5.0, 1.7, 1], [6.0, 2.9, 4.5, 1.5, 1], [5.7, 2.6, 3.5, 1.0, 1], [5.5, 2.4, 3.8, 1.1, 1], [5.5, 2.4, 3.7, 1.0, 1], [5.8, 2.7, 3.9, 1.2, 1], [6.0, 2.7, 5.1, 1.6, 1], [5.4, 3.0, 4.5, 1.5, 1], [6.0, 3.4, 4.5, 1.6, 1], [6.7, 3.1, 4.7, 1.5, 1], [6.3, 2.3, 4.4, 1.3, 1], [5.6, 3.0, 4.1, 1.3, 1], [5.5, 2.5, 4.0, 1.3, 1], [5.5, 2.6, 4.4, 1.2, 1], [6.1, 3.0, 4.6, 1.4, 1], [5.8, 2.6, 4.0, 1.2, 1], [5.0, 2.3, 3.3, 1.0, 1], [5.6, 2.7, 4.2, 1.3, 1], [5.7, 3.0, 4.2, 1.2, 1], [5.7, 2.9, 4.2, 1.3, 1], [6.2, 2.9, 4.3, 1.3, 1], [5.1, 2.5, 3.0, 1.1, 1], [5.7, 2.8, 4.1, 1.3, 1], [6.3, 3.3, 6.0, 2.5, 2], [5.8, 2.7, 5.1, 1.9, 2], [7.1, 3.0, 5.9, 2.1, 2], [6.3, 2.9, 5.6, 1.8, 2], [6.5, 3.0, 5.8, 2.2, 2], [7.6, 3.0, 6.6, 2.1, 2], [4.9, 2.5, 4.5, 1.7, 2], [7.3, 2.9, 6.3, 1.8, 2], [6.7, 2.5, 5.8, 1.8, 2], [7.2, 3.6, 6.1, 2.5, 2], [6.5, 3.2, 5.1, 2.0, 2], [6.4, 2.7, 5.3, 1.9, 2], [6.8, 3.0, 5.5, 2.1, 2], [5.7, 2.5, 5.0, 2.0, 2], [5.8, 2.8, 5.1, 2.4, 2], [6.4, 3.2, 5.3, 2.3, 2], [6.5, 3.0, 5.5, 1.8, 2], [7.7, 3.8, 6.7, 2.2, 2], [7.7, 2.6, 6.9, 2.3, 2], [6.0, 2.2, 5.0, 1.5, 2], [6.9, 3.2, 5.7, 2.3, 2], [5.6, 2.8, 4.9, 2.0, 2], [7.7, 2.8, 6.7, 2.0, 2], [6.3, 2.7, 4.9, 1.8, 2], [6.7, 3.3, 5.7, 2.1, 2], [7.2, 3.2, 6.0, 1.8, 2], [6.2, 2.8, 4.8, 1.8, 2], [6.1, 3.0, 4.9, 1.8, 2], [6.4, 2.8, 5.6, 2.1, 2], [7.2, 3.0, 5.8, 1.6, 2], [7.4, 2.8, 6.1, 1.9, 2], [7.9, 3.8, 6.4, 2.0, 2], [6.4, 2.8, 5.6, 2.2, 2], [6.3, 2.8, 5.1, 1.5, 2], [6.1, 2.6, 5.6, 1.4, 2], [7.7, 3.0, 6.1, 2.3, 2], [6.3, 3.4, 5.6, 2.4, 2], [6.4, 3.1, 5.5, 1.8, 2], [6.0, 3.0, 4.8, 1.8, 2], [6.9, 3.1, 5.4, 2.1, 2], [6.7, 3.1, 5.6, 2.4, 2], [6.9, 3.1, 5.1, 2.3, 2], [5.8, 2.7, 5.1, 1.9, 2], [6.8, 3.2, 5.9, 2.3, 2], [6.7, 3.3, 5.7, 2.5, 2], [6.7, 3.0, 5.2, 2.3, 2], [6.3, 2.5, 5.0, 1.9, 2], [6.5, 3.0, 5.2, 2.0, 2], [6.2, 3.4, 5.4, 2.3, 2], [5.9, 3.0, 5.1, 1.8, 2]]}").data;
+        for (const type in types) trainingData[type] = [];
+        for (const key of Object.keys(data))
+            for (const type in types)
+                if (data[key][type] && !(data[key][type] == 0 || data[key][type] == 1)) {
+                    data[key][type].push(poseIndex[data[key].pose]);
+                    trainingData[type].push(data[key][type]);
+                }
+        for (const type in types) {
+            var dType = types[type].toUpperCase();
+            trainingData[dType + "_CLASSES"] = Object.keys(poseIndex);
+            trainingData[dType + "_NUM_CLASSES"] = trainingData[dType + "_CLASSES"].length;
+            trainingData[dType + "_DATA"] = trainingData[type];
+        }
+        return trainingData;
+    });
 }
 
 function ensureUserExists(user, name, time, cb) {
@@ -187,7 +181,7 @@ function ensureUserExists(user, name, time, cb) {
                 "lastUpdated": time,
                 "name": name,
                 "updating": false,
-                "dimensions": getReSize(),
+                "dimensions": [0, 0],
                 "latestOpenPoseFrame": "",
                 "latestTensorData": {
                     "datatype1": 0,
@@ -215,7 +209,7 @@ function updateUpdating(val, cb) {
 }
 
 function updateConfidences(warriorii, tree, triangle, cb) {
-    console.log("Updating confidences; warriorii to " + warriorii + ", tree to " + tree + ", & triangle to " + triangle + "."); // @ " + (new Date()).toLocaleString() + "...");
+    console.log("Updating confidences; warriorii to " + warriorii + ", tree to " + tree + ", & triangle to " + triangle + ".");
     db.ref("users/" + user + "/latestConfidences").set({
         "warriorii": warriorii,
         "tree": tree,
@@ -309,48 +303,42 @@ async function iris() { // The main function of the Iris demo.
 }
 
 function trainModel(cb) {
-    getTrainingData();
-    console.log(trainingData);
-    canPredict = false;
     var time = Date.now();
-    console.log("Training model...");
+    canPredict = false;
+    console.log("Training model with training data...");
+    var trainData = getTrainingData();
+    console.log(trainData);
     // TODO: PUT IN CODE FOR TRAINING MODEL
     // iris();
-    console.log("Finishing training model in " + (Date.now() - time) + "ms!");
+    console.log("Finished training model in " + (Date.now() - time) + "ms!");
     canPredict = true;
     if (cb) cb();
 }
 
 function runTensorflow(data, image) {
-    if (canPredict) {
-        console.log("Model training is not complete; trying later...");
-        return;
+    if (canPredict) console.log("Model training is not complete; trying later...");
+    else {
+        console.log("Running Tensorflow with:");
+        console.log(data);
+        // TODO: Need to put in code to run Tensorflow.JS
+        // Need to update confidences using updateConfidences(warriorii, tree, triangle, cb)
     }
-    // console.log("Running Tensorflow with:");
-    // console.log("data");
-    // console.log(data);
-    // TODO: Need to put in code to run Tensorflow.JS
-    // Need to update confidences using updateConfidences(warriorii, tree, triangle, cb)
 }
 // ============================= HELPER FUNCTIONS ==============================
-function updateStuff() {
+function updateTime() {
     var time = convertMS(Date.now() - lastTime);
     lastUpdated.innerHTML = "Yoga Master | Last updated: " + time.m + "m " + time.s + "s";
 }
 
 function resize() {
-    updateDims(getReSize());
-}
-
-function getReSize() {
-    return [video.videoWidth, video.videoHeight];
+    updateDims([video.videoWidth, video.videoHeight]);
 }
 
 function getDataString() {
     if (latestData === 0) return "No person detected in frame...";
     else if (latestData === 1) return "Please get your entire body in frame!";
     var rtrn;
-    if(confidences) {
+    if (confidences) {
         var confs = Object.values(Object.assign({}, confidences)).map(x => Number.parseFloat(x));
         var maxIndx = confs.indexOf(Math.max.apply({}, confs));
         var maxPose = Object.keys(confidences)[maxIndx];
@@ -362,11 +350,9 @@ function getDataString() {
             else if (maxConf < .7) rtrn += "... not that bad at it!";
             else if (maxConf < .8) rtrn += " pretty good!";
             else if (maxConf < .9) rtrn += " <i>so</i> close to being perfect!";
-            else rtrn += " a yoga master at " + maxPose + "!";
+            else rtrn += " a <b>Yoga Master</b> on " + maxPose + " pose!";
         }
-        rtrn += "<br>";
-        for (var row in latestData) rtrn += "\'" + row + "\': " + latestData[row] + " | "; //rtrn += "\'"+angleNames[angle]+"\': "+latestData[angle]+" | ";
-        return rtrn.slice(0, -2);
+        return rtrn;
     }
 }
 
@@ -386,18 +372,3 @@ function convertMS(ms) {
         s: s
     };
 }
-// ================ OLD CODE USED FOR TESTING AND UNDERSTANDING ================
-// firebase serve -o $IP -p 8080 | browser-sync start --proxy 0.0.0.0:8080 --port 8081 --files "src/**/*"
-// lastUpdated.innerHTML = "Last updated: "+(Date.now() - lastTime)+"ms";
-// lastUpdated.innerHTML = "Last updated "+Math.round((Date.now() - lastTime)/1000)+" seconds ago, @ "+(new Date(lastTime)).toLocaleString();
-// firebase.initializeApp({
-//     apiKey: "AIzaSyBMoovddhJJI0mJB1Y_e6ofNSYprmsCGFg",
-//     authDomain: "yoga-master-app.firebaseapp.com",
-//     databaseURL: "https://yoga-master-app.firebaseio.com",
-//     projectId: "yoga-master-app",
-//     storageBucket: "",
-//     messagingSenderId: "728299532737"
-// });
-// return [window.innerWidth || document.documentElement.clientWidth || document.getElementsByTagName('body')[0].clientWidth,
-// window.innerHeight|| document.documentElement.clientHeight|| document.getElementsByTagName('body')[0].clientHeight]
-// lastUpdated.innerHTML = "YOGA MASTERS | Last updated: "+time.h+"h "+time.m+"m "+time.s+"s";
