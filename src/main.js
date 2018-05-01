@@ -14,11 +14,12 @@ var updating;
 var lastTime;
 var poseIndex;
 var canPredict;
-var latestData;
 var confidences;
 var mediaDevice;
 var imageCapture;
 var latestTrainFrame;
+var latestData = 0;
+var currentlyTraining = true;
 var btn = document.getElementById("btn");
 var data = document.getElementById("data");
 var video = document.getElementById("video");
@@ -41,7 +42,7 @@ function initApp() {
         "callbacks": {
             "uiShown": () => {
                 console.log("Auto logging in...");
-                setTimeout(function() {
+                setTimeout(function () {
                     if (document.querySelector("#firebaseui-auth-container button")) document.querySelector("#firebaseui-auth-container button").click();
                 }, 1000);
                 return false;
@@ -54,8 +55,12 @@ function initApp() {
                     setupAppAndListeners(() => {
                         window.onresize = resize;
                         setInterval(updateTime, 1000);
-                        mediaDevice = navigator.mediaDevices.getUserMedia({ video: true });
-                        btn.addEventListener("click", () => { updateUpdating(!updating); });
+                        mediaDevice = navigator.mediaDevices.getUserMedia({
+                            video: true
+                        });
+                        btn.addEventListener("click", () => {
+                            updateUpdating(!updating);
+                        });
                         onGetUserMediaButtonClick();
                         document.getElementById("loader").style.display = "none";
                         document.getElementById("background").style.display = "none";
@@ -81,9 +86,15 @@ function setupAppAndListeners(cb) {
             });
         });
     });
-    db.ref("users/" + user + "/latestOpenPoseFrame").on("value", (snap) => { openposeFrame.setAttribute("src", snap.val()); });
-    db.ref("users/" + user + "/lastUpdated").on("value", (snap) => { lastTime = snap.val(); });
-    db.ref("users/" + user + "/updating").on("value", (snap) => { updating = snap.val(); });
+    db.ref("users/" + user + "/latestOpenPoseFrame").on("value", (snap) => {
+        openposeFrame.setAttribute("src", snap.val());
+    });
+    db.ref("users/" + user + "/lastUpdated").on("value", (snap) => {
+        lastTime = snap.val();
+    });
+    db.ref("users/" + user + "/updating").on("value", (snap) => {
+        updating = snap.val();
+    });
     db.ref("users/" + user + "/latestConfidences").on("value", snap => {
         confidences = snap.val();
         handleLatestData();
@@ -100,6 +111,10 @@ function setupAppAndListeners(cb) {
         grabLatestFrame.style.width = (100 * (snap.val()[0] / snap.val()[1])) + "px";
         data.style.left = (100 * (snap.val()[0] / snap.val()[1]) + 20) + "px";
         data.style.right = (100 * (snap.val()[0] / snap.val()[1]) + 130) + "px";
+    });
+    db.ref("training").on("value", snp => {
+        currentlyTraining = snp.val();
+        handleLatestData();
     });
 }
 // ============================= FIREBASE FUNCTIONS =============================
@@ -136,17 +151,23 @@ function ensureUserExists(user, name, time, cb) {
 function updateUpdating(val, cb) {
     resize();
     console.log("Updating recording to " + (val ? "playing" : "stopped") + ".");
-    db.ref("users/" + user + "/updating").set(val, () => { if (cb) cb(); });
+    db.ref("users/" + user + "/updating").set(val, () => {
+        if (cb) cb();
+    });
 }
 
 function updateDims(val, cb) {
     console.log("Updating video dimensions to " + val[0] + " × " + val[1]);
-    db.ref("users/" + user + "/dimensions").set(val, () => { if (cb) cb(); });
+    db.ref("users/" + user + "/dimensions").set(val, () => {
+        if (cb) cb();
+    });
 }
 
 function updateLatestFrame(val, cb) {
     console.log("Updating latest frame...");
-    db.ref("users/" + user + "/latestFrame").set(val, () => { if (cb) cb(); });
+    db.ref("users/" + user + "/latestFrame").set(val, () => {
+        if (cb) cb();
+    });
 }
 
 function updateConfidences(warriorii, tree, triangle, cb) {
@@ -162,10 +183,19 @@ function updateConfidences(warriorii, tree, triangle, cb) {
 }
 // ============================= MAIN APP FUNCTIONS ============================
 function handleLatestData() {
-    if (latestData === 0 || !confidences) {
+    if(currentlyTraining) {
+        header.style.background = "linear-gradient(rgba(0,0,0,1), rgba(0,0,0,0))";
+        data.style.backgroundColor = "rgb(0,0,0)";
+        [].forEach.call(document.getElementsByClassName("ldBar-label"), function (div) {
+            div.style.backgroundColor = "rgb(0,0,0)";
+        });
+        document.getElementById("warrior").ldBar.set(0);
+        document.getElementById("tree").ldBar.set(0);
+        document.getElementById("triangle").ldBar.set(0);
+    } else if (latestData === 0 || !confidences) {
         header.style.background = "linear-gradient(rgba(244,67,54,1), rgba(0,0,0,0))";
         data.style.backgroundColor = "rgb(244,67,54)";
-        [].forEach.call(document.getElementsByClassName("ldBar-label"), function(div) {
+        [].forEach.call(document.getElementsByClassName("ldBar-label"), function (div) {
             div.style.backgroundColor = "rgb(244,67,54)";
         });
         document.getElementById("warrior").ldBar.set(0);
@@ -174,16 +204,16 @@ function handleLatestData() {
     } else if (latestData === 1) {
         header.style.background = "linear-gradient(rgba(249,168,37,1), rgba(0,0,0,0))";
         data.style.backgroundColor = "rgb(249,168,37)";
-        [].forEach.call(document.getElementsByClassName("ldBar-label"), function(div) {
+        [].forEach.call(document.getElementsByClassName("ldBar-label"), function (div) {
             div.style.backgroundColor = "rgb(249,168,37)";
         });
-        document.getElementById("warrior").ldBar.set(1);
-        document.getElementById("tree").ldBar.set(1);
-        document.getElementById("triangle").ldBar.set(1);
+        document.getElementById("warrior").ldBar.set(0);
+        document.getElementById("tree").ldBar.set(0);
+        document.getElementById("triangle").ldBar.set(0);
     } else {
         header.style.background = "linear-gradient(rgba(0,200,83,.45), rgba(0,0,0,0))";
         data.style.backgroundColor = "rgb(0,200,83)";
-        [].forEach.call(document.getElementsByClassName("ldBar-label"), function(div) {
+        [].forEach.call(document.getElementsByClassName("ldBar-label"), function (div) {
             div.style.backgroundColor = "rgb(0,200,83)";
         });
         document.getElementById("warrior").ldBar.set(confidences.warriorii * 100);
@@ -194,7 +224,8 @@ function handleLatestData() {
 }
 
 function getDataString() { // TODO: CHANGE TO HANDLE ARRAY OF ANY SIZE; BUT MAKE SURE
-    if (latestData === 0) return "No person detected in frame...";
+    if (currentlyTraining) return "The model is currently training...";
+    else if (latestData === 0) return "No person detected in frame...";
     else if (latestData === 1) return "Please get your entire body in frame!";
     else if (!confidences) return "Loading...";
     var rtrn;
