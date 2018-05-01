@@ -4,6 +4,7 @@ html {
     margin: 0px;
     font-family: 'Roboto', sans-serif;
 }
+
 body {
     width: 100%;
     height: 100%;
@@ -13,17 +14,20 @@ body {
     /*background-color: #64DD17;*/
     color: black;
 }
+
 body .container {
     left: 60px;
 }
+
 #header {
-    background: linear-gradient(rgba(0,200,83,.45), rgba(0,0,0,0));
+    background: linear-gradient(rgba(0, 200, 83, .45), rgba(0, 0, 0, 0));
     width: 100%;
     height: 105px;
     top: 0px;
     position: absolute;
     text-align: center;
 }
+
 #header p {
     font-weight: 900;
     margin: 0px;
@@ -31,35 +35,43 @@ body .container {
     display: inline-block;
     color: white;
     text-shadow: 1px 1px 2px #000;
-    /*text-shadow: 1px 1px 5px #64DD17;*/ /*#ffffff;*/
+    /*text-shadow: 1px 1px 5px #64DD17;*/
+    /*#ffffff;*/
 }
+
 #header #welcome {
     position: absolute;
     right: 0px;
     top: 0px;
 }
+
 #header #counter {
     padding-top: 0px;
 }
+
 #grabFrameCanvas {
     height: 100px;
     left: 10px;
     bottom: 10px;
     position: absolute;
 }
+
 #grabFrameCanvasData {
     display: none;
 }
+
 #openposeCanvas {
     right: 120px;
     bottom: 10px;
     position: absolute;
 }
+
 #tensorCanvas {
     right: 10px;
     bottom: 10px;
     position: absolute;
 }
+
 #data {
     bottom: 10px;
     position: absolute;
@@ -69,11 +81,14 @@ body .container {
     font-weight: 700;
     border-radius: 100000px;
     padding: 5px 15px;
-    background-color: rgb(0,200,83);
+    background-color: rgb(0, 200, 83);
     color: white;
     text-shadow: 1px 1px 2px black;
     box-sizing: border-box;
+    left: 10px;
+    right: 10px;
 }
+
 video {
     height: 100%;
     top: 0px;
@@ -82,6 +97,7 @@ video {
     margin: auto;
     display: block;
 }
+
 #background {
     top: 0;
     left: 0;
@@ -91,12 +107,14 @@ video {
     background-color: #00C853;
     text-align: center;
 }
+
 #firebaseui-auth-container {
     position: absolute;
     top: 45%;
     width: 100%;
     margin: auto;
 }
+
 #loader {
     position: absolute;
     top: 47.5%;
@@ -104,6 +122,7 @@ video {
     margin: auto;
     color: white;
 }
+
 #confidences {
     display: inline-flex;
     margin-top: -35px;
@@ -111,9 +130,11 @@ video {
     border-radius: 1000000000000px;
     padding: 0px 35px;
 }
+
 #selectedData {
     width: 5px;
 }
+
 .ldBar-label {
     /*display: none;*/
     color: white;
